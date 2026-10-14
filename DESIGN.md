@@ -131,8 +131,8 @@ The alternative, only flagging pass→fail, hides slow decay.
   and PR comments.
 - The composite GitHub Action passes inputs through environment variables instead of interpolating
   `${{ inputs.* }}` into the shell script, which rules out script injection through workflow inputs.
-- The repo's own CI runs the action on the offline suite (`dogfood` job), so the action is tested
-  on every commit without secrets.
+- The repo's CI workflow has a `dogfood` job that runs the action on the offline suite, so the action
+  can be tested without secrets.
 
 ## 9. What I'd add next
 

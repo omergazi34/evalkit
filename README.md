@@ -1,6 +1,5 @@
 # evalkit
 
-[![CI](https://github.com/omergazi34/evalkit/actions/workflows/ci.yml/badge.svg)](https://github.com/omergazi34/evalkit/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%E2%80%933.14-blue)
 ![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -166,8 +165,8 @@ jobs:
 ```
 
 The Markdown report is written to the job summary, and the job fails on a threshold miss or a
-regression. This repository's own CI runs the action against
-[`examples/quickstart.yaml`](examples/quickstart.yaml) (the `dogfood` job).
+regression. This repository's CI workflow includes a `dogfood` job that runs the action on
+[`examples/quickstart.yaml`](examples/quickstart.yaml).
 
 ## Design
 
