@@ -1,0 +1,34 @@
+# Runs fully offline with the deterministic mock provider:
+#   evalkit run examples/quickstart.yaml
+name: quickstart
+description: Smallest useful suite. Swap the provider for a real model to test it.
+
+provider:
+  type: mock
+  responses:
+    capital: "The capital of Turkey is Ankara."
+    json-extract: '{"name": "Ada", "age": 36}'
+
+system: You are a concise assistant.
+
+cases:
+  - id: capital
+    input: What is the capital of Turkey?
+    assert:
+      - type: contains
+        value: Ankara
+      - type: not_contains
+        value: Istanbul
+      - type: length
+        max: 200
+
+  - id: json-extract
+    input: 'Return JSON with keys name and age for: "Ada is 36."'
+    assert:
+      - type: json_schema
+        schema:
+          type: object
+          required: [name, age]
+          properties:
+            name: {type: string}
+            age: {type: integer}

@@ -1,0 +1,66 @@
+name: evalkit
+description: Run LLM regression tests and fail the job when quality drops below a threshold or regresses.
+author: omergazi34
+branding:
+  icon: check-circle
+  color: purple
+
+inputs:
+  suite:
+    description: Path to the suite YAML file.
+    required: true
+  threshold:
+    description: Minimum pass rate between 0 and 1. Defaults to the suite's own threshold.
+    required: false
+    default: ""
+  baseline:
+    description: Results JSON from a previous run. Any case that passes less often than in the baseline fails the job.
+    required: false
+    default: ""
+  args:
+    description: Extra arguments passed to `evalkit run` (e.g. "-t smoke -j 4").
+    required: false
+    default: ""
+  python-version:
+    description: Python version used to run evalkit.
+    required: false
+    default: "3.13"
+
+outputs:
+  results:
+    description: Path to the results JSON written by this run.
+    value: ${{ steps.run.outputs.results }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v7
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install evalkit
+      shell: bash
+      run: python -m pip install --quiet "$GITHUB_ACTION_PATH"
+
+    - name: Run suite
+      id: run
+      shell: bash
+      # Inputs go through env vars, never string-interpolated into the script, to rule out
+      # shell injection from untrusted workflow inputs.
+      env:
+        SUITE: ${{ inputs.suite }}
+        THRESHOLD: ${{ inputs.threshold }}
+        BASELINE: ${{ inputs.baseline }}
+        EXTRA_ARGS: ${{ inputs.args }}
+      run: |
+        args=(run "$SUITE" -o evalkit-results.json --markdown evalkit-report.md --junit evalkit-junit.xml)
+        [[ -n "$THRESHOLD" ]] && args+=(--threshold "$THRESHOLD")
+        [[ -n "$BASELINE" ]] && args+=(--baseline "$BASELINE")
+        read -r -a extra <<< "$EXTRA_ARGS"
+        set +e
+        evalkit "${args[@]}" "${extra[@]}"
+        status=$?
+        set -e
+        [[ -f evalkit-report.md ]] && cat evalkit-report.md >> "$GITHUB_STEP_SUMMARY"
+        echo "results=evalkit-results.json" >> "$GITHUB_OUTPUT"
+        exit $status

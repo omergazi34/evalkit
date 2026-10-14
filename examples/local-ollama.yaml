@@ -1,0 +1,71 @@
+# Evaluate a local model through Ollama's OpenAI-compatible endpoint. No API key needed:
+#   ollama pull llama3
+#   evalkit run examples/local-ollama.yaml
+name: local-ollama
+description: Data-driven checks for a local Llama 3 model, repeated 3x to surface flakiness.
+
+provider:
+  id: llama3
+  type: openai
+  base_url: http://localhost:11434/v1
+  model: llama3
+  temperature: 0.7
+  max_tokens: 256
+  timeout_s: 180
+
+repeat: 3
+threshold: 0.8
+
+# A prompt template shared by the data-driven cases below; each case fills in {{ text }}.
+prompt: |
+  Classify the sentiment of this product review as exactly one word:
+  positive, negative or neutral. Reply with the word only.
+  Review: {{ text }}
+
+cases:
+  - id: sentiment-positive
+    vars: {text: "Arrived a day early and works perfectly. Would buy again!"}
+    assert:
+      - {type: regex, pattern: '^\W*positive\W*$', flags: i}
+
+  - id: sentiment-negative
+    vars: {text: "Stopped working after two days and support never replied."}
+    assert:
+      - {type: regex, pattern: '^\W*negative\W*$', flags: i}
+
+  - id: sentiment-neutral
+    vars: {text: "It is a phone case. It fits the phone."}
+    assert:
+      - {type: regex, pattern: '^\W*neutral\W*$', flags: i}
+
+  - id: sentiment-sarcasm
+    vars: {text: "Oh great, another charger that charges nothing. Fantastic."}
+    assert:
+      - {type: regex, pattern: '^\W*negative\W*$', flags: i}
+
+  - id: json-extraction
+    input: |
+      Extract the order as JSON with keys "item" (string), "quantity" (integer) and
+      "express" (boolean) from: "Please send 3 USB-C cables, express shipping."
+      Return only the JSON object.
+    assert:
+      - type: json_schema
+        schema:
+          type: object
+          required: [item, quantity, express]
+          properties:
+            item: {type: string}
+            quantity: {const: 3}
+            express: {const: true}
+
+  - id: arithmetic
+    input: "What is 17 * 23? Reply with the number only."
+    assert:
+      - {type: regex, pattern: '\b391\b'}
+      - {type: length, max: 20}
+
+  - id: capital-turkish
+    input: "Türkiye'nin başkenti neresidir? Tek kelimeyle cevap ver."
+    assert:
+      - {type: contains, value: Ankara}
+      - {type: not_contains, value: İstanbul}
